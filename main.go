@@ -38,6 +38,21 @@ func getDim(file *os.File) (int,int) {
     return img.Height, img.Width
 }
 
+func tileImage(height int, width int, img image.Image) *image.RGBA {
+    //Get the source rectangle
+    sr := image.Rect(0,0,width,height)
+    //Initialize Destination rectangle
+    dst := image.NewRGBA(image.Rect(0,0,width*imgwidth,height*imgheight))
+    for i := 0; i < imgwidth; i++ {
+        for j := 0; j < imgheight; j++ {
+            dp := image.Point{width*i,height*j}
+            rec := image.Rectangle{dp, dp.Add(sr.Size())}
+            draw.Draw(dst,rec,img,sr.Min,draw.Src)
+        }
+    }
+    return dst
+}
+
 func loadImage(w http.ResponseWriter, r *http.Request) {
     //TOFIX: Figure out file
     fileimg, err := os.Open("test.jpg")
@@ -51,20 +66,10 @@ func loadImage(w http.ResponseWriter, r *http.Request) {
     //Get the tile sizes of the image
     tileh := height / imgheight
     tilew := width / imgwidth
-    //Get the source rectangle
-    sr := image.Rect(0,0,tilew,tileh)
-    //Initialize Destination rectangle
-    dst := image.NewRGBA(image.Rect(0,0,width,height))
-    for i := 0; i < imgwidth; i++ {
-        for j := 0; j < imgheight; j++ {
-            dp := image.Point{tilew*i,tileh*j}
-            rec := image.Rectangle{dp, dp.Add(sr.Size())}
-            draw.Draw(dst,rec,img,sr.Min,draw.Src)
-        }
-    }
+    //Tile the image
+    dst := tileImage(tileh, tilew, img)
     newimg, _ :=  os.Create("tmp.jpg")
     defer newimg.Close()
-
     jpeg.Encode(newimg, dst, &jpeg.Options{jpeg.DefaultQuality})
 
 }
