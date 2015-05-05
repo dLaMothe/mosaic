@@ -6,15 +6,16 @@ import (
     "html/template"
     "image"
     "image/jpeg"
-    "image/draw"
+    "image/color"
+    //"image/draw"
     "net/http"
     "os"
 )
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth int = 20
-const imgheight int = 20
+const imgwidth int = 5
+const imgheight int = 5
 
 /*STRUCTS
 type Page struct {
@@ -39,15 +40,44 @@ func getDim(file *os.File) (int,int) {
 }
 
 func tileImage(height int, width int, img image.Image) *image.RGBA {
-    //Get the source rectangle
-    sr := image.Rect(0,0,width,height)
+
     //Initialize Destination rectangle
     dst := image.NewRGBA(image.Rect(0,0,width*imgwidth,height*imgheight))
+    //Iterate over all tiles
     for i := 0; i < imgwidth; i++ {
         for j := 0; j < imgheight; j++ {
-            dp := image.Point{width*i,height*j}
-            rec := image.Rectangle{dp, dp.Add(sr.Size())}
-            draw.Draw(dst,rec,img,sr.Min,draw.Src)
+            //Get the source rectangle
+            //sr := image.Rect(width*i,height*j,width,height)
+            //Destination point
+            //dp := image.Point{width*i,height*j}
+            //Destination rectangle
+            //rec := image.Rectangle{dp, dp.Add(sr.Size())}
+            //Colour counter for tile
+            var red, green, blue, alpha uint32 = 0, 0, 0, 0
+            //Iterate over individual tile
+            for k := 0; k < width; k++ {
+                for l := 0; l < height; l++ {
+                    tmpred, tmpgreen, tmpblue, tmpalpha := img.At(width*(k+i),height*(l+j)).RGBA()
+                    red += tmpred
+                    green += tmpgreen
+                    blue += tmpblue
+                    alpha += tmpalpha
+                }
+            }
+            //Calculate average colour
+            avgred := red / uint32((width*height))
+            avggreen := green / uint32((width*height))
+            avgblue := blue / uint32((width*height))
+            avgalpha := alpha / uint32((width*height))
+
+            //Iterate over tile again to refill
+            for k := 0; k < width; k++ {
+                for l := 0; l < height; l++ {
+                    dst.Set(width*(k+i),height*(l+j), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
+                }
+            }
+
+            //draw.Draw(dst,rec,img,sr.Min,draw.Src)
         }
     }
     return dst
