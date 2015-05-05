@@ -13,6 +13,8 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
+const imgwidth int = 20
+const imgheight int = 20
 
 /*STRUCTS
 type Page struct {
@@ -27,23 +29,43 @@ func check(e error) {
     }
 }
 
+
 //FUNCTIONS
 
+func getDim(file *os.File) (int,int) {
+    img, _, err := image.DecodeConfig(file)
+    check(err)
+    return img.Height, img.Width
+}
+
 func loadImage(w http.ResponseWriter, r *http.Request) {
-  fileimg, err := os.Open("test.jpg")
-  check(err)
-  defer fileimg.Close()
-  img, _, err := image.Decode(fileimg)
-  check(err)
+    //TOFIX: Figure out file
+    fileimg, err := os.Open("test.jpg")
+    check(err)
+    defer fileimg.Close()
+    img, _, err := image.Decode(fileimg)
+    check(err)
+    fileimgtwo, err := os.Open("test.jpg")
+    height, width := getDim(fileimgtwo)
+    defer fileimgtwo.Close()
+    //Get the tile sizes of the image
+    tileh := height / imgheight
+    tilew := width / imgwidth
+    //Get the source rectangle
+    sr := image.Rect(0,0,tilew,tileh)
+    //Initialize Destination rectangle
+    dst := image.NewRGBA(image.Rect(0,0,width,height))
+    for i := 0; i < imgwidth; i++ {
+        for j := 0; j < imgheight; j++ {
+            dp := image.Point{tilew*i,tileh*j}
+            rec := image.Rectangle{dp, dp.Add(sr.Size())}
+            draw.Draw(dst,rec,img,sr.Min,draw.Src)
+        }
+    }
+    newimg, _ :=  os.Create("tmp.jpg")
+    defer newimg.Close()
 
-  m := image.NewRGBA(image.Rect(0,0,800,600))
-
-  draw.Draw(m,m.Bounds(), img, image.Point{0,0},draw.Src)
-
-  newimg, _ :=  os.Create("tmp.jpg")
-  defer newimg.Close()
-
-  jpeg.Encode(newimg, m, &jpeg.Options{jpeg.DefaultQuality})
+    jpeg.Encode(newimg, dst, &jpeg.Options{jpeg.DefaultQuality})
 
 }
 
