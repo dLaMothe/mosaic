@@ -14,8 +14,8 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth int = 5
-const imgheight int = 5
+const imgwidth int = 150
+const imgheight int = 150
 
 /*STRUCTS
 type Page struct {
@@ -53,27 +53,27 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
             //Destination rectangle
             //rec := image.Rectangle{dp, dp.Add(sr.Size())}
             //Colour counter for tile
-            var red, green, blue, alpha uint32 = 0, 0, 0, 0
+            var red, green, blue, alpha float32 = 0, 0, 0, 0
             //Iterate over individual tile
             for k := 0; k < width; k++ {
                 for l := 0; l < height; l++ {
                     tmpred, tmpgreen, tmpblue, tmpalpha := img.At(width*(k+i),height*(l+j)).RGBA()
-                    red += tmpred
-                    green += tmpgreen
-                    blue += tmpblue
-                    alpha += tmpalpha
+                    red += (float32(tmpred) / 256)
+                    green += (float32(tmpgreen) / 256)
+                    blue += (float32(tmpblue) / 256)
+                    alpha += (float32(tmpalpha) / 256)
                 }
             }
             //Calculate average colour
-            avgred := red / uint32((width*height))
-            avggreen := green / uint32((width*height))
-            avgblue := blue / uint32((width*height))
-            avgalpha := alpha / uint32((width*height))
+            avgred := (red / float32(width*height))
+            avggreen := (green / float32(width*height))
+            avgblue := (blue / float32(width*height))
+            avgalpha := (alpha / float32(width*height))
 
             //Iterate over tile again to refill
             for k := 0; k < width; k++ {
                 for l := 0; l < height; l++ {
-                    dst.Set(width*(k+i),height*(l+j), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
+                    dst.Set(((width*i)+k),((height*j)+l ), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
                 }
             }
 
