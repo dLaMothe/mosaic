@@ -2,10 +2,12 @@ package main
 
 import (
     //"fmt"
-    "log"
+    //"log"
     "html/template"
     "image"
     "image/jpeg"
+    _ "image/png"
+    _ "image/gif"
     "image/color"
     //"image/draw"
     "net/http"
@@ -18,20 +20,15 @@ const imgwidth int = 300
 const imgheight int = 300
 
 //ERROR CHECKING
-func check(e error) {
+func check(w http.ResponseWriter, r *http.Request, e error) {
     if e != nil {
-        log.Fatal(e)
+        http.Redirect(w,r, "/", http.StatusFound)
+        return
     }
 }
 
 
 //FUNCTIONS
-
-func getDim(file *os.File) (int,int) {
-    img, _, err := image.DecodeConfig(file)
-    check(err)
-    return img.Height, img.Width
-}
 
 func tileImage(height int, width int, img image.Image) *image.RGBA {
 
@@ -80,13 +77,16 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
 
 func loadImage(w http.ResponseWriter, r *http.Request) {
     fileimg, _, err := r.FormFile("file")
-    check(err)
-    defer fileimg.Close()
+    fileimg2, _, err := r.FormFile("file")
+    check(w,r,err)
     img, _, err := image.Decode(fileimg)
-    check(err)
-    fileimgtwo, err := os.Open("test.jpg")
-    height, width := getDim(fileimgtwo)
-    defer fileimgtwo.Close()
+    defer fileimg.Close()
+    check(w,r,err)
+    imgconf, _, err := image.DecodeConfig(fileimg2)
+    check(w,r,err)
+    defer fileimg2.Close()
+    height := imgconf.Height
+    width := imgconf.Width
     //Get the tile sizes of the image
     tileh := height / imgheight
     tilew := width / imgwidth
