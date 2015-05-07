@@ -16,8 +16,8 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("form.html","image.html")))
-const imgwidth int = 300
-const imgheight int = 300
+const imgwidth float32 = 150
+const imgheight float32 = 150
 
 //ERROR CHECKING
 func check(w http.ResponseWriter, r *http.Request, e error) {
@@ -30,13 +30,13 @@ func check(w http.ResponseWriter, r *http.Request, e error) {
 
 //FUNCTIONS
 
-func tileImage(height int, width int, img image.Image) *image.RGBA {
+func tileImage(height float32, width float32, img image.Image) *image.RGBA {
 
     //Initialize Destination rectangle
-    dst := image.NewRGBA(image.Rect(0,0,width*imgwidth,height*imgheight))
-    for i := 0; i < imgwidth; i++ {
+    dst := image.NewRGBA(image.Rect(0,0,int(width*imgwidth),int(height*imgheight)))
+    for i := 0; i < int(imgwidth); i++ {
     //Iterate over all tiles
-        for j := 0; j < imgheight; j++ {
+        for j := 0; j < int(imgheight); j++ {
             //Get the source rectangle
             //sr := image.Rect(width*i,height*j,width,height)
             //Destination point
@@ -46,9 +46,9 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
             //Colour counter for tile
             var red, green, blue, alpha float32 = 0, 0, 0, 0
             //Iterate over individual tile
-            for k := 0; k < width; k++ {
-                for l := 0; l < height; l++ {
-                    tmpred, tmpgreen, tmpblue, tmpalpha := img.At(width*(k+i),height*(l+j)).RGBA()
+            for k := 0; k < int(width); k++ {
+                for l := 0; l < int(height); l++ {
+                    tmpred, tmpgreen, tmpblue, tmpalpha := img.At(int(width*(float32(k)+float32(i))),int(height*(float32(l)+float32(j)))).RGBA()
                     //Need to divide by 256 to convert 16 bit integer range to 8 bit integer range
                     red += (float32(tmpred) / 256)
                     green += (float32(tmpgreen) / 256)
@@ -63,9 +63,9 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
             avgalpha := (alpha / float32(width*height))
 
             //Iterate over tile again to refill
-            for k := 0; k < width; k++ {
-                for l := 0; l < height; l++ {
-                    dst.Set(((width*i)+k),((height*j)+l ), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
+            for k := 0; k < int(width); k++ {
+                for l := 0; l < int(height); l++ {
+                    dst.Set(((int(width*float32(i)+float32(k)))),((int(height*float32(j)+float32(l)))), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
                 }
             }
 
@@ -85,8 +85,8 @@ func loadImage(w http.ResponseWriter, r *http.Request) {
     imgconf, _, err := image.DecodeConfig(fileimg2)
     check(w,r,err)
     defer fileimg2.Close()
-    height := imgconf.Height
-    width := imgconf.Width
+    height := float32(imgconf.Height)
+    width := float32(imgconf.Width)
     //Get the tile sizes of the image
     tileh := height / imgheight
     tilew := width / imgwidth
