@@ -13,16 +13,10 @@ import (
 )
 
 //GLOBALS
-var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth int = 150
-const imgheight int = 150
+var templates = template.Must((template.ParseFiles("form.html","image.html")))
+const imgwidth int = 300
+const imgheight int = 300
 
-/*STRUCTS
-type Page struct {
-    Title string
-    Body []byte
-}
-*/
 //ERROR CHECKING
 func check(e error) {
     if e != nil {
@@ -43,8 +37,8 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
 
     //Initialize Destination rectangle
     dst := image.NewRGBA(image.Rect(0,0,width*imgwidth,height*imgheight))
-    //Iterate over all tiles
     for i := 0; i < imgwidth; i++ {
+    //Iterate over all tiles
         for j := 0; j < imgheight; j++ {
             //Get the source rectangle
             //sr := image.Rect(width*i,height*j,width,height)
@@ -58,6 +52,7 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
             for k := 0; k < width; k++ {
                 for l := 0; l < height; l++ {
                     tmpred, tmpgreen, tmpblue, tmpalpha := img.At(width*(k+i),height*(l+j)).RGBA()
+                    //Need to divide by 256 to convert 16 bit integer range to 8 bit integer range
                     red += (float32(tmpred) / 256)
                     green += (float32(tmpgreen) / 256)
                     blue += (float32(tmpblue) / 256)
@@ -84,8 +79,7 @@ func tileImage(height int, width int, img image.Image) *image.RGBA {
 }
 
 func loadImage(w http.ResponseWriter, r *http.Request) {
-    //TOFIX: Figure out file
-    fileimg, err := os.Open("test.jpg")
+    fileimg, _, err := r.FormFile("file")
     check(err)
     defer fileimg.Close()
     img, _, err := image.Decode(fileimg)
@@ -121,10 +115,15 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "image")
 }
 
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+    renderTemplate(w, "form")
+}
+
 //MAIN
 func main() {
     //Function Handlers
-    http.HandleFunc("/",imageHandler)
+    http.HandleFunc("/image",imageHandler)
+    http.HandleFunc("/",uploadHandler)
     //Begin server listening on port 8080
     http.ListenAndServe(":8080", nil)
 }
