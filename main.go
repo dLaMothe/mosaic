@@ -17,9 +17,9 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth float32 = 5
-const imgheight float32 = 5
-const tilenum int = 10
+const imgwidth float32 = 200
+const imgheight float32 = 200
+const tilenum int = 100
 
 //ERROR CHECKING
 func check(w http.ResponseWriter, r *http.Request, e error) {
@@ -32,12 +32,12 @@ func check(w http.ResponseWriter, r *http.Request, e error) {
 
 //FUNCTIONS
 
-func getTiles(tileh float32, tilew float32, w http.ResponseWriter, r *http.Request) [tilenum]image.Image {
-    //Declare array of images to hold tiles
-    var tiles [tilenum]image.Image
-    //Initialize tile rectangle
-    dst := image.NewRGBA(image.Rect(0,0,int(tilew),int(tileh)))
+func getTiles(tiles *[tilenum]image.Image, tileh float32, tilew float32, w http.ResponseWriter, r *http.Request) {
+
+
     for i := 0; i < tilenum; i++ {
+        //Initialize tile rectangle
+        dst := image.NewRGBA(image.Rect(0,0,int(tilew),int(tileh)))
         val := r.FormValue(fmt.Sprint("photo",i))
         resp, err := http.Get(val)
         if err != nil {
@@ -53,9 +53,6 @@ func getTiles(tileh float32, tilew float32, w http.ResponseWriter, r *http.Reque
 
         imgheight := rec.Dy()
         imgwidth := rec.Dx()
-        newimg, _ :=  os.Create(fmt.Sprint("tmp",i,".jpg"))
-        defer newimg.Close()
-        jpeg.Encode(newimg, m, &jpeg.Options{jpeg.DefaultQuality})
         //Begin downsizing process
         var xratio float32 = float32(imgwidth) / tilew
         var yratio float32 = float32(imgheight) / tileh
@@ -69,7 +66,39 @@ func getTiles(tileh float32, tilew float32, w http.ResponseWriter, r *http.Reque
         }
         tiles[i] = dst
     }
-    return tiles
+}
+
+func compareTiles(height,width,r,g,b,a float32, tiles [tilenum]image.Image) int {
+    var best float64 = 10000
+    bestindex := 0
+    for i := 0; i < tilenum; i++ {
+        //Colour counter for tile
+        var red, green, blue, alpha float32 = 0, 0, 0, 0
+        //Iterate over individual tile
+        for j := 0; j < int(width); j++ {
+            for k := 0; k < int(height); k++ {
+                tmpred, tmpgreen, tmpblue, tmpalpha := tiles[i].At(j,k).RGBA()
+                //Need to divide by 256 to convert 16 bit integer range to 8 bit integer range
+                red += (float32(tmpred) / 256)
+                green += (float32(tmpgreen) / 256)
+                blue += (float32(tmpblue) / 256)
+                alpha += (float32(tmpalpha) / 256)
+            }
+        }
+        //Calculate average colour
+        avgred := (red / float32(width*height))
+        avggreen := (green / float32(width*height))
+        avgblue := (blue / float32(width*height))
+        avgalpha := (alpha / float32(width*height))
+
+        //Compare the two averages
+        difference := (math.Abs(float64(r-avgred))) + (math.Abs(float64(g-avggreen)) + (math.Abs(float64(b-avgblue)) + (math.Abs(float64(a - avgalpha)))))
+        if difference < best {
+            best = difference
+            bestindex = i
+        }
+    }
+    return bestindex
 }
 
 func tileImage(height float32, width float32, img image.Image, w http.ResponseWriter, r *http.Request) *image.RGBA {
@@ -77,19 +106,12 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
     //Initialize Destination rectangle
     dst := image.NewRGBA(image.Rect(0,0,int(width*imgwidth),int(height*imgheight)))
     //Initialize Tile array
-    tileArr := getTiles(height, width, w, r)
-    tileindex := 0
+    //Declare array of images to hold tiles
+    var tileArr [tilenum]image.Image
+    getTiles(&tileArr, height, width, w, r)
     for i := 0; i < int(imgwidth); i++ {
     //Iterate over all tiles
         for j := 0; j < int(imgheight); j++ {
-            //Get the source rectangle
-            sr := tileArr[tileindex].Bounds()
-            //Destination point
-            dp := image.Point{int(width*float32(i)),int(height*float32(j))}
-            //Destination rectangle
-            rec := image.Rectangle{dp, dp.Add(sr.Size())}
-
-            /*
             //Colour counter for tile
             var red, green, blue, alpha float32 = 0, 0, 0, 0
             //Iterate over individual tile
@@ -109,15 +131,17 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
             avgblue := (blue / float32(width*height))
             avgalpha := (alpha / float32(width*height))
 
-            //Iterate over tile again to refill
-            for k := 0; k < int(width); k++ {
-                for l := 0; l < int(height); l++ {
-                    dst.Set(((int((width*float32(i))+float32(k)))),((int((height*float32(j))+float32(l)))), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
-                }
-            }
-            */
+            tileindex := compareTiles(height,width,avgred,avggreen,avgblue,avgalpha,tileArr)
+
+            //Get the source rectangle
+            sr := tileArr[tileindex].Bounds()
+            //Destination point
+            dp := image.Point{int(width*float32(i)),int(height*float32(j))}
+            //Destination rectangle
+            rec := image.Rectangle{dp, dp.Add(sr.Size())}
 
             draw.Draw(dst,rec,tileArr[tileindex],sr.Min,draw.Src)
+            fmt.Printf("\nIndex:%d\n",tileindex)
             tileindex++
             if tileindex == 10 {
                 tileindex = 0

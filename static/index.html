@@ -5,15 +5,7 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 </head>
 <body>
-    <p>
-        Choose which image you would like to upload, only valid images will
-        produce a result
-    </p>
     <form id="upload" action="/image" method="post" enctype="multipart/form-data">
-        <label for="file">Filename:</label>
-        <input type="file" name="imgfile" id="file">
-        <input type="submit" name="submit" value="Submit">
-
     </form>
     <p>
         Click the load tiles button to load tiles, add tags separated by commas if desired
@@ -37,6 +29,13 @@
                     var imgTag = '<input type="hidden" name="photo' + index + '" value="' + photoURL + '">';
                     $(imgTag).appendTo('form');
                     index++;
+                    if (index == 99) {
+                        var instructions = '<p>Choose which image you would like to upload, only valid images will produce a result</p>'
+
+                        var file = '<label for="file">Filename:</label><input type="file" name="imgfile" id="file"><input type="submit" name="submit" value="Submit">'
+                        $(instructions).appendTo('form')
+                        $(file).appendTo('form')
+                    }
                 });
             })
             return true;
