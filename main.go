@@ -17,9 +17,9 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth float32 = 200
-const imgheight float32 = 200
-const tilenum int = 100
+const imgwidth float32 = 50
+const imgheight float32 = 50
+const tilenum int = 200
 
 //ERROR CHECKING
 func check(w http.ResponseWriter, r *http.Request, e error) {
@@ -141,11 +141,6 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
             rec := image.Rectangle{dp, dp.Add(sr.Size())}
 
             draw.Draw(dst,rec,tileArr[tileindex],sr.Min,draw.Src)
-            fmt.Printf("\nIndex:%d\n",tileindex)
-            tileindex++
-            if tileindex == 10 {
-                tileindex = 0
-            }
         }
     }
     return dst

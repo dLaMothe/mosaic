@@ -7,40 +7,51 @@
 <body>
     <form id="upload" action="/image" method="post" enctype="multipart/form-data">
     </form>
-    <p>
-        Click the load tiles button to load tiles, add tags separated by commas if desired
-    </p>
-    <input type="text" name="tag" id="tag"/>
-    <input type="submit" id="tiles" name="tiles" value="Add Tiles">
+    <div id="tilegen">
+        <p>
+            List any number of descriptions for photos you want, separated by commas. If you just want
+            to grab random photos leave text box blank and click add tiles
+        </p>
+        <input type="text" name="tag" id="tag"/>
+        <input type="submit" id="tiles" name="tiles" value="Add Tiles">
+    </div>
     <script type="text/javascript">
         $('#tiles').click(function() {
             //Set API key
             //var apiKey = '3de25176df77f67ed8695c3e17987006';
             var usertags = $('#tag').val();
             var index = 0;
+            var per_page = 200;
             if(usertags == "") {
-              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&api_key=3de25176df77f67ed8695c3e17987006&format=json&nojsoncallback=1';
+              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&api_key=3de25176df77f67ed8695c3e17987006&per_page=' + per_page + '&format=json&nojsoncallback=1';
             } else {
-              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3de25176df77f67ed8695c3e17987006&tags=' + usertags + '&format=json&nojsoncallback=1';
+              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3de25176df77f67ed8695c3e17987006&tags=' + usertags + '&per_page=' + per_page + '&format=json&nojsoncallback=1';
             }
+            $("#tilegen").remove()
+            $("<h3>Processing...</h3>").appendTo('body')
             $.getJSON(request,function(data) {
                 $.each(data.photos.photo,function(i,item) {
                     var photoURL = 'http://farm' + item.farm + '.static.flickr.com/' + item.server + '/' + item.id + '_' + item.secret + '_m.jpg';
                     var imgTag = '<input type="hidden" name="photo' + index + '" value="' + photoURL + '">';
                     $(imgTag).appendTo('form');
                     index++;
-                    if (index == 99) {
+                    if (index == (per_page - 1)) {
                         var instructions = '<p>Choose which image you would like to upload, only valid images will produce a result</p>'
 
                         var file = '<label for="file">Filename:</label><input type="file" name="imgfile" id="file"><input type="submit" name="submit" value="Submit">'
+                        $("h3").remove()
                         $(instructions).appendTo('form')
                         $(file).appendTo('form')
                     }
                 });
             })
+
             return true;
         });
-
+        $("#upload").submit(function() {
+            $("form").hide()
+            $("<h3>Processing...</h3>").appendTo('body')
+        })
     </script>
 </body>
 </html>

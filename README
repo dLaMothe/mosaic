@@ -1,0 +1,18 @@
+To run the program you can build using the command
+
+go build
+
+within the mosaic directory
+
+This will generate an executable mosaic which you can use to a local server
+by running
+
+./mosaic
+
+Now that the program is hosted you can test it out by loading accessing this
+url in a browser
+
+http://localhost:8080/
+
+From this point you simply have to add a tag description for the photos 
+and then upload a photo to be turned into a mosaic
