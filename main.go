@@ -15,7 +15,7 @@ import (
 )
 
 //GLOBALS
-var templates = template.Must((template.ParseFiles("form.html","image.html")))
+var templates = template.Must((template.ParseFiles("image.html")))
 const imgwidth float32 = 150
 const imgheight float32 = 150
 
@@ -65,7 +65,7 @@ func tileImage(height float32, width float32, img image.Image) *image.RGBA {
             //Iterate over tile again to refill
             for k := 0; k < int(width); k++ {
                 for l := 0; l < int(height); l++ {
-                    dst.Set(((int(width*float32(i)+float32(k)))),((int(height*float32(j)+float32(l)))), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
+                    dst.Set(((int((width*float32(i))+float32(k)))),((int((height*float32(j))+float32(l)))), color.RGBA{uint8(avgred),uint8(avggreen),uint8(avgblue),uint8(avgalpha)})
                 }
             }
 
@@ -76,8 +76,8 @@ func tileImage(height float32, width float32, img image.Image) *image.RGBA {
 }
 
 func loadImage(w http.ResponseWriter, r *http.Request) {
-    fileimg, _, err := r.FormFile("file")
-    fileimg2, _, err := r.FormFile("file")
+    fileimg, _, err := r.FormFile("imgfile")
+    fileimg2, _, err := r.FormFile("imgfile")
     check(w,r,err)
     img, _, err := image.Decode(fileimg)
     defer fileimg.Close()
@@ -115,15 +115,12 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "image")
 }
 
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
-    renderTemplate(w, "form")
-}
-
 //MAIN
 func main() {
+    fs := http.FileServer(http.Dir("static") )
     //Function Handlers
+    http.Handle("/",fs)
     http.HandleFunc("/image",imageHandler)
-    http.HandleFunc("/",uploadHandler)
     //Begin server listening on port 8080
     http.ListenAndServe(":8080", nil)
 }

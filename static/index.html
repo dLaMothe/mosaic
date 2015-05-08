@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Picture</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        $(function() {
+            $('#upload').submit(function() {
+                //Set API key
+                //var apiKey = '3de25176df77f67ed8695c3e17987006';
+                var tag = document.getElementById("tag").value;
+                $.getJSON('https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=eac3da8239527bf10a5855df0a412004&tags=' + tag + '&format=json&auth_token=72157652438532831-3b3b825186003f2b&api_sig=c44651b8a95e70d806decd177e4969dc',
+                return true;
+            });
+        });
+    </script>
+    <p>
+        Choose which image you would like to upload, only valid images will
+        produce a result
+    </p>
+    <form id="upload" action="/image" method="post" enctype="multipart/form-data">
+        <label for="file">Filename:</label>
+        <input type="file" name="imgfile" id="file">
+        <input type="submit" name="submit" value="Submit">
+    </form>
+    <p>
+        If you want a specific category of photo put the tag here
+    </p>
+      <input type="text" name="tag" id="tag"/>
+
+</body>
+</html>
