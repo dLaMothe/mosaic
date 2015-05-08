@@ -5,17 +5,6 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 </head>
 <body>
-    <script type="text/javascript">
-        $(function() {
-            $('#upload').submit(function() {
-                //Set API key
-                //var apiKey = '3de25176df77f67ed8695c3e17987006';
-                var tag = document.getElementById("tag").value;
-                $.getJSON('https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=eac3da8239527bf10a5855df0a412004&tags=' + tag + '&format=json&auth_token=72157652438532831-3b3b825186003f2b&api_sig=c44651b8a95e70d806decd177e4969dc',
-                return true;
-            });
-        });
-    </script>
     <p>
         Choose which image you would like to upload, only valid images will
         produce a result
@@ -24,11 +13,35 @@
         <label for="file">Filename:</label>
         <input type="file" name="imgfile" id="file">
         <input type="submit" name="submit" value="Submit">
+
     </form>
     <p>
-        If you want a specific category of photo put the tag here
+        Click the load tiles button to load tiles, add tags separated by commas if desired
     </p>
-      <input type="text" name="tag" id="tag"/>
+    <input type="text" name="tag" id="tag"/>
+    <input type="submit" id="tiles" name="tiles" value="Add Tiles">
+    <script type="text/javascript">
+        $('#tiles').click(function() {
+            //Set API key
+            //var apiKey = '3de25176df77f67ed8695c3e17987006';
+            var usertags = $('#tag').val();
+            var index = 0;
+            if(usertags == "") {
+              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&api_key=3de25176df77f67ed8695c3e17987006&format=json&nojsoncallback=1';
+            } else {
+              var request = 'https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3de25176df77f67ed8695c3e17987006&tags=' + usertags + '&format=json&nojsoncallback=1';
+            }
+            $.getJSON(request,function(data) {
+                $.each(data.photos.photo,function(i,item) {
+                    var photoURL = 'http://farm' + item.farm + '.static.flickr.com/' + item.server + '/' + item.id + '_' + item.secret + '_m.jpg';
+                    var imgTag = '<input type="hidden" name="photo' + index + '" value="' + photoURL + '">';
+                    $(imgTag).appendTo('form');
+                    index++;
+                });
+            })
+            return true;
+        });
 
+    </script>
 </body>
 </html>

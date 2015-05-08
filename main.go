@@ -1,7 +1,7 @@
 package main
 
 import (
-    //"fmt"
+    "fmt"
     //"log"
     "html/template"
     "image"
@@ -76,15 +76,17 @@ func tileImage(height float32, width float32, img image.Image) *image.RGBA {
 }
 
 func loadImage(w http.ResponseWriter, r *http.Request) {
-    fileimg, _, err := r.FormFile("imgfile")
-    fileimg2, _, err := r.FormFile("imgfile")
+    val := r.FormValue("photo0")
+    fmt.Printf("\n\n\n\n%s\n\n\n\n",val)
+    fileimg,err := http.Get(val)
+    fileimg2,err := http.Get(val)
     check(w,r,err)
-    img, _, err := image.Decode(fileimg)
-    defer fileimg.Close()
+    img, _, err := image.Decode(fileimg.Body)
+    defer fileimg.Body.Close()
     check(w,r,err)
-    imgconf, _, err := image.DecodeConfig(fileimg2)
+    imgconf, _, err := image.DecodeConfig(fileimg2.Body)
     check(w,r,err)
-    defer fileimg2.Close()
+    defer fileimg2.Body.Close()
     height := float32(imgconf.Height)
     width := float32(imgconf.Width)
     //Get the tile sizes of the image
