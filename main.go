@@ -17,9 +17,14 @@ import (
 
 //GLOBALS
 var templates = template.Must((template.ParseFiles("image.html")))
-const imgwidth float32 = 50
-const imgheight float32 = 50
-const tilenum int = 200
+const imgwidth float32 = 40
+const imgheight float32 = 40
+const tilenum int = 4000
+
+//STRUCTS
+type Color struct {
+    r,g,b,a float32
+}
 
 //ERROR CHECKING
 func check(w http.ResponseWriter, r *http.Request, e error) {
@@ -68,11 +73,9 @@ func getTiles(tiles *[tilenum]image.Image, tileh float32, tilew float32, w http.
     }
 }
 
-func compareTiles(height,width,r,g,b,a float32, tiles [tilenum]image.Image) int {
-    var best float64 = 10000
-    bestindex := 0
+func getColors(tiles *[tilenum] image.Image, tilecolors *[tilenum] Color, width, height float32) {
+    //Colour counter for tile
     for i := 0; i < tilenum; i++ {
-        //Colour counter for tile
         var red, green, blue, alpha float32 = 0, 0, 0, 0
         //Iterate over individual tile
         for j := 0; j < int(width); j++ {
@@ -86,13 +89,19 @@ func compareTiles(height,width,r,g,b,a float32, tiles [tilenum]image.Image) int 
             }
         }
         //Calculate average colour
-        avgred := (red / float32(width*height))
-        avggreen := (green / float32(width*height))
-        avgblue := (blue / float32(width*height))
-        avgalpha := (alpha / float32(width*height))
+        tilecolors[i].r = (red / float32(width*height))
+        tilecolors[i].g = (green / float32(width*height))
+        tilecolors[i].b = (blue / float32(width*height))
+        tilecolors[i].a = (alpha / float32(width*height))
+    }
+}
 
+func compareTiles(height,width,r,g,b,a float32,tilecolors [tilenum]Color) int {
+    var best float64 = 10000
+    bestindex := 0
+    for i := 0; i < tilenum; i++ {
         //Compare the two averages
-        difference := (math.Abs(float64(r-avgred))) + (math.Abs(float64(g-avggreen)) + (math.Abs(float64(b-avgblue)) + (math.Abs(float64(a - avgalpha)))))
+        difference := (math.Abs(float64(r-tilecolors[i].r))) + (math.Abs(float64(g-tilecolors[i].g)) + (math.Abs(float64(b-tilecolors[i].b)) + (math.Abs(float64(a - tilecolors[i].a)))))
         if difference < best {
             best = difference
             bestindex = i
@@ -109,6 +118,9 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
     //Declare array of images to hold tiles
     var tileArr [tilenum]image.Image
     getTiles(&tileArr, height, width, w, r)
+    //Declare array of structs to hold image color averages
+    var tileColor [tilenum] Color
+    getColors(&tileArr, &tileColor, height, width)
     for i := 0; i < int(imgwidth); i++ {
     //Iterate over all tiles
         for j := 0; j < int(imgheight); j++ {
@@ -131,7 +143,7 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
             avgblue := (blue / float32(width*height))
             avgalpha := (alpha / float32(width*height))
 
-            tileindex := compareTiles(height,width,avgred,avggreen,avgblue,avgalpha,tileArr)
+            tileindex := compareTiles(height,width,avgred,avggreen,avgblue,avgalpha,tileColor)
 
             //Get the source rectangle
             sr := tileArr[tileindex].Bounds()
