@@ -2,7 +2,6 @@ package main
 
 import (
     "fmt"
-    "log"
     "math"
     "html/template"
     "image"
@@ -45,15 +44,11 @@ func getTiles(tiles *[tilenum]image.Image, tileh float32, tilew float32, w http.
         dst := image.NewRGBA(image.Rect(0,0,int(tilew),int(tileh)))
         val := r.FormValue(fmt.Sprint("photo",i))
         resp, err := http.Get(val)
-        if err != nil {
-            log.Panic("Tile generation failed")
-        }
+        check(w,r,err)
         defer resp.Body.Close()
 
         m, _, err := image.Decode(resp.Body)
-        if err != nil {
-            log.Panic("Tile generation failed")
-        }
+        check(w,r,err)
         rec := m.Bounds()
 
         imgheight := rec.Dy()
@@ -110,10 +105,10 @@ func compareTiles(height,width,r,g,b,a float32,tilecolors [tilenum]Color) int {
     return bestindex
 }
 
-func tileImage(height float32, width float32, img image.Image, w http.ResponseWriter, r *http.Request) *image.RGBA {
+func tileImage(height float32, width float32, img image.Image, rec image.Rectangle, w http.ResponseWriter, r *http.Request) *image.RGBA {
 
     //Initialize Destination rectangle
-    dst := image.NewRGBA(image.Rect(0,0,int(width*imgwidth),int(height*imgheight)))
+    dst := image.NewRGBA(rec)
     //Initialize Tile array
     //Declare array of images to hold tiles
     var tileArr [tilenum]image.Image
@@ -126,10 +121,12 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
         for j := 0; j < int(imgheight); j++ {
             //Colour counter for tile
             var red, green, blue, alpha float32 = 0, 0, 0, 0
+            var xoffset float32 = width*float32(i)
+            var yoffset float32 = height*float32(j)
             //Iterate over individual tile
             for k := 0; k < int(width); k++ {
                 for l := 0; l < int(height); l++ {
-                    tmpred, tmpgreen, tmpblue, tmpalpha := img.At(int(width*(float32(k)+float32(i))),int(height*(float32(l)+float32(j)))).RGBA()
+                    tmpred, tmpgreen, tmpblue, tmpalpha := img.At(int(xoffset+float32(i)),int(yoffset+float32(j))).RGBA()
                     //Need to divide by 256 to convert 16 bit integer range to 8 bit integer range
                     red += (float32(tmpred) / 256)
                     green += (float32(tmpgreen) / 256)
@@ -160,21 +157,18 @@ func tileImage(height float32, width float32, img image.Image, w http.ResponseWr
 
 func loadImage(w http.ResponseWriter, r *http.Request) {
     fileimg, _, err := r.FormFile("imgfile")
-    fileimg2, _, err := r.FormFile("imgfile")
     check(w,r,err)
     img, _, err := image.Decode(fileimg)
     defer fileimg.Close()
     check(w,r,err)
-    imgconf, _, err := image.DecodeConfig(fileimg2)
-    check(w,r,err)
-    defer fileimg2.Close()
-    height := float32(imgconf.Height)
-    width := float32(imgconf.Width)
+    rec := img.Bounds()
+    height := rec.Dy()
+    width := rec.Dx()
     //Get the tile sizes of the image
-    tileh := height / imgheight
-    tilew := width / imgwidth
+    tileh := float32(height) / imgheight
+    tilew := float32(width) / imgwidth
     //Tile the image
-    dst := tileImage(tileh, tilew, img, w, r)
+    dst := tileImage(tileh, tilew, img, rec, w, r)
     newimg, _ :=  os.Create("tmp.jpg")
     defer newimg.Close()
     jpeg.Encode(newimg, dst, &jpeg.Options{jpeg.DefaultQuality})
