@@ -18,7 +18,7 @@ import (
 var templates = template.Must((template.ParseFiles("image.html")))
 const imgwidth float32 = 40
 const imgheight float32 = 40
-const tilenum int = 4000
+const tilenum int = 250
 
 //STRUCTS
 type Color struct {
@@ -188,6 +188,8 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
     loadImage(w,r)
     //Serve file to load the image
     http.ServeFile(w, r, "tmp.jpg")
+    err := os.Remove("tmp.jpg")
+    check(w,r,err)
     //Render the page
     renderTemplate(w, "image")
 }
